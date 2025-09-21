@@ -1,5 +1,6 @@
 package com.uphouse.monew.domain.user.domain;
 
+import com.uphouse.monew.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.FieldNameConstants;
@@ -10,7 +11,12 @@ import lombok.experimental.FieldNameConstants;
 @Getter
 @ToString
 @FieldNameConstants(level = AccessLevel.PRIVATE)
-public class User {
+@Table(
+    uniqueConstraints = {
+        @UniqueConstraint(columnNames = { "email" }
+    )}
+)
+public class User extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -26,5 +32,9 @@ public class User {
         this.email = email;
         this.nickname = nickname;
         this.password = password;
+    }
+
+    public void changeNickname(String nickname) {
+        this.nickname = nickname;
     }
 }

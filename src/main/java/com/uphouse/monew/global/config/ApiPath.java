@@ -1,4 +1,4 @@
-package com.uphouse.monew.common.config;
+package com.uphouse.monew.global.config;
 
 public final class ApiPath {
 

@@ -4,18 +4,18 @@ import com.uphouse.monew.domain.user.domain.User;
 
 import java.time.LocalDateTime;
 
-public record UserSignUpResponse (
+public record UserResponse(
     Long id,
     String email,
     String nickname,
     LocalDateTime createdAt
 ) {
-    public static UserSignUpResponse from(User user) {
-        return new UserSignUpResponse(
+    public static UserResponse from(User user) {
+        return new UserResponse(
             user.getId(),
             user.getEmail(),
             user.getNickname(),
-            LocalDateTime.now()
+            user.getCreatedAt()
         );
     }
 }
