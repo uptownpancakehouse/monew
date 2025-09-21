@@ -1,6 +1,13 @@
 spring:
-  server:
-    port: 8080
+  profiles:
+    active: dev
 
   application:
     name: monew
+
+#  server:
+#    port: 8080
+
+
+
+
