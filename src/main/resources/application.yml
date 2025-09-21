@@ -1,0 +1,6 @@
+spring:
+  server:
+    port: 8080
+
+  application:
+    name: monew
