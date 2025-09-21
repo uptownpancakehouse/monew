@@ -42,11 +42,17 @@ public class UserService {
 
     @Transactional
     public void delete(Long userId) {
-
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new GlobalException(ExceptionCode.USER_NOT_FOUND));
+        userRepository.delete(user);
     }
 
     @Transactional
     public void deleteHard(Long userId) {
+        // TODO(robolovo) - 논리 삭제 후 1일 경과 뒤 유저 정보가 완전히 삭제되도록 하세요.
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new GlobalException(ExceptionCode.USER_NOT_FOUND));
+        userRepository.delete(user);
     }
 
     private void validateEmail(String email) {
