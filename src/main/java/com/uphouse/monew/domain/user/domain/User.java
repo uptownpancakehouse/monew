@@ -7,21 +7,17 @@ import lombok.experimental.FieldNameConstants;
 
 @Entity
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-@AllArgsConstructor(access = AccessLevel.PRIVATE)
 @Getter
 @ToString
 @FieldNameConstants(level = AccessLevel.PRIVATE)
-@Table(
-    uniqueConstraints = {
-        @UniqueConstraint(columnNames = { "email" }
-    )}
-)
+@Table()
 public class User extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(nullable = false, unique = true)
     private String email;
 
     private String nickname;
