@@ -45,7 +45,8 @@ public class UserService {
     public void delete(Long userId) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new GlobalException(ExceptionCode.USER_NOT_FOUND));
-        userRepository.delete(user);
+        user.delete();
+        userRepository.save(user);
     }
 
     @Transactional
