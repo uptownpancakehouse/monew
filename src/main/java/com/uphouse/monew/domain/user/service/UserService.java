@@ -21,7 +21,8 @@ public class UserService {
     @Transactional
     public UserResponse signUp(UserSignUpRequest request) {
         validateEmail(request.email());
-        User user = userRepository.save(request.toEntity());
+        User user = request.toEntity();
+        userRepository.save(user);
         return UserResponse.from(user);
     }
 
@@ -56,7 +57,7 @@ public class UserService {
     }
 
     private void validateEmail(String email) {
-        Boolean exist = userRepository.existsByEmail(email);
+        boolean exist = userRepository.existsByEmail(email);
         if (exist) {
             throw new GlobalException(ExceptionCode.USER_EMAIL_ALREADY_USED);
         }

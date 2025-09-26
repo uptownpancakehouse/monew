@@ -10,7 +10,7 @@ import lombok.experimental.FieldNameConstants;
 @Getter
 @ToString
 @FieldNameConstants(level = AccessLevel.PRIVATE)
-@Table()
+@Table(name = "users")
 public class User extends BaseEntity {
 
     @Id

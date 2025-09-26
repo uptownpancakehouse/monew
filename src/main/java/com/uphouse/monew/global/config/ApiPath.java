@@ -12,4 +12,9 @@ public final class ApiPath {
         public static final String UPDATE = BASE + "/{id}";
         public static final String HARD_DELETE = BASE + "/{id}" + "/hard";
     }
+
+    public static final class Article {
+        public static final String BASE = API_BASE + "/articles";
+        public static final String CREATE = BASE + "/{id}/article-views";
+    }
 }
