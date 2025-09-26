@@ -29,6 +29,7 @@ dependencies {
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
     implementation 'org.springframework.boot:spring-boot-starter-web'
+    implementation 'org.springframework.boot:spring-boot-starter-webflux' // WebClient 용
 
     //WebClientConfig 설정 추가
     implementation 'org.springframework:spring-webflux'
