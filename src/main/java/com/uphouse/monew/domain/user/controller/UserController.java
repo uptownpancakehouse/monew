@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.*;
 
 @RequiredArgsConstructor
 @RestController
+@RequestMapping("/api/users")
 public class UserController {
 
     private final UserService userService;
@@ -40,15 +41,15 @@ public class UserController {
         return ResponseEntity.status(200).body(response);
     }
 
-    @DeleteMapping(ApiPath.User.UPDATE)
-    public ResponseEntity<Void> delete(@RequestParam Long id) {
-        userService.delete(id);
+    @DeleteMapping("/{userId}")
+    public ResponseEntity<Void> delete(@PathVariable Long userId) {
+        userService.delete(userId);
         return ResponseEntity.status(204).build();
     }
 
-    @DeleteMapping(ApiPath.User.HARD_DELETE)
-    public ResponseEntity<Void> hardDelete(@RequestParam Long id) {
-        userService.deleteHard(id);
+    @DeleteMapping("/{userId}/hard")
+    public ResponseEntity<Void> hardDelete(@PathVariable Long userId) {
+        userService.deleteHard(userId);
         return ResponseEntity.status(204).build();
     }
 
