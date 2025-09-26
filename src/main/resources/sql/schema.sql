@@ -6,7 +6,8 @@ CREATE TABLE users (
         email VARCHAR(255) NOT NULL UNIQUE,
         nickname VARCHAR(100) NOT NULL UNIQUE,
         password VARCHAR(255) NOT NULL,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        deleted BOOLEAN DEFAULT FALSE
 );
 
 -- ========================
@@ -61,7 +62,8 @@ CREATE TABLE articles (
         publish_date TIMESTAMP,
         summary TEXT,
         comment_count INT DEFAULT 0,
-        view_count BIGINT DEFAULT 0
+        view_count BIGINT DEFAULT 0,
+        deleted BOOLEAN DEFAULT FALSE
 );
 
 -- ========================
@@ -88,6 +90,7 @@ CREATE TABLE comments (
         like_count INT DEFAULT 0,
         liked_by_me BOOLEAN DEFAULT FALSE,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        deleted BOOLEAN DEFAULT FALSE,
         FOREIGN KEY (article_id) REFERENCES articles(id) ON DELETE CASCADE,
         FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
