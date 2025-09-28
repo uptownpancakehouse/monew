@@ -13,6 +13,10 @@ spring:
     username: postgres
     password: ${MONEW_DB_PASSWORD}
 
+  data:
+    mongodb:
+      uri: mongodb://mongo:${MONGO_PASSWORD}@shortline.proxy.rlwy.net:44383
+
   jpa:
     hibernate:
       ddl-auto: none
