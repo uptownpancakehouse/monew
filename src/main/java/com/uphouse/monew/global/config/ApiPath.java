@@ -17,4 +17,11 @@ public final class ApiPath {
         public static final String BASE = API_BASE + "/articles";
         public static final String CREATE = BASE + "/{id}/article-views";
     }
+
+    public static final class Comment {
+        public static final String BASE = API_BASE + "/comments";
+        public static final String COMMENT_ID = BASE + "/{commentId}";
+        public static final String COMMENT_LIKES = COMMENT_ID + "/comment-likes";
+        public static final String COMMENT_HARD_DELETE = COMMENT_ID + "/hard";
+    }
 }

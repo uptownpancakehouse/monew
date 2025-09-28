@@ -14,7 +14,11 @@ public enum ExceptionCode {
     USER_NOT_FOUND(HttpStatus.UNAUTHORIZED, ClientExceptionCode.USER_NOT_FOUND, "유저가 존재하지 않습니다."),
     USER_INVALID_PASSWORD(HttpStatus.BAD_REQUEST, ClientExceptionCode.LOGIN_ERROR, "비밀번호가 일치하지 않습니다."),
     USER_EMAIL_ALREADY_USED(HttpStatus.CONFLICT, ClientExceptionCode.USER_EMAIL_ALREADY_USED,
-        "이미 해당 이메일을 사용하는 유저가 존재합니다.")
+        "이미 해당 이메일을 사용하는 유저가 존재합니다."),
+
+    // COMMENT
+    COMMENT_NOT_FOUND(HttpStatus.BAD_REQUEST, ClientExceptionCode.COMMENT_NOT_FOUND, "댓글이 존재하지 않습니다.")
+
     ;
 
     private final HttpStatus httpStatus;

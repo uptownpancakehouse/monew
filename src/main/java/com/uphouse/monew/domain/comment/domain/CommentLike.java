@@ -1,7 +1,10 @@
 package com.uphouse.monew.domain.comment.domain;
 
 import com.uphouse.monew.domain.BaseEntity;
-import jakarta.persistence.*;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
 import lombok.*;
 import lombok.experimental.FieldNameConstants;
 
@@ -13,27 +16,20 @@ import java.util.UUID;
 @Getter
 @ToString
 @FieldNameConstants(level = AccessLevel.PRIVATE)
-public class Comment extends BaseEntity {
+public class CommentLike extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
-    private UUID articleId;
+    private UUID commentId;
 
     private UUID userId;
 
-    private String content;
-
-    private Long likeCount;
-
     private Boolean likedByMe;
 
-    public Comment(UUID articleId, UUID userId, String content, Long likeCount, Boolean likedByMe) {
-        this.articleId = articleId;
+    public CommentLike(UUID commentId, UUID userId) {
+        this.commentId = commentId;
         this.userId = userId;
-        this.content = content;
-        this.likeCount = likeCount;
-        this.likedByMe = likedByMe;
     }
 }
