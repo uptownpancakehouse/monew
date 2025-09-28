@@ -56,6 +56,9 @@ dependencies {
     // swagger
     implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.4'
 
+    // Spring Batch
+    implementation 'org.springframework.boot:spring-boot-starter-batch'
+
     // QueryDSL (jakarta + JPA)
     implementation 'com.querydsl:querydsl-jpa:5.1.0:jakarta'
     querydsl 'com.querydsl:querydsl-apt:5.1.0:jakarta'
