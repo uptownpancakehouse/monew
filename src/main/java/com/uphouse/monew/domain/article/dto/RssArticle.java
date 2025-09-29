@@ -6,5 +6,6 @@ public record RssArticle(
         String title,
         String link,
         String author,
+        String description,
         LocalDateTime publishedDate
 ) {}

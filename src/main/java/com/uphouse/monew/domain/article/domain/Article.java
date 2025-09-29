@@ -1,14 +1,16 @@
 package com.uphouse.monew.domain.article.domain;
 
+import com.uphouse.monew.domain.article.dto.SourceType;
 import jakarta.persistence.*;
-import lombok.AccessLevel;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
 
+@Builder
+@AllArgsConstructor
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-@Entity
+@Entity @Getter
 @Table(name = "articles")
 public class Article {
 
@@ -16,7 +18,8 @@ public class Article {
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
-    private String source;
+    @Enumerated(EnumType.STRING)
+    private SourceType source;
 
     private String sourceUrl;
 
