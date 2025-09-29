@@ -6,21 +6,20 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-@Entity @Getter
-@Table(name = "interests")
-public class Interest {
+@Entity
+@Getter
+@Table(name = "keywords")
+public class Keywords {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false, unique = true)
-    private String name;
+    @Column(unique = true, nullable = false)
+    private String keyword;
 
-    private int subscriberCount;
-
-    public Interest(String name, int subscriberCount) {
-        this.name = name;
-        this.subscriberCount = subscriberCount;
+    public Keywords(String keyword) {
+        this.keyword = keyword;
     }
+
 }

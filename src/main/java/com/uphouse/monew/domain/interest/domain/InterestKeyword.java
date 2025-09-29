@@ -5,22 +5,22 @@ import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+@Entity
+@Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-@Entity @Getter
-@Table(name = "interests")
-public class Interest {
+@Table(name = "interest_keywords")
+public class InterestKeyword {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false, unique = true)
-    private String name;
+    @ManyToOne
+    @JoinColumn(name = "interest_id", nullable = false)
+    private Interest interest;
 
-    private int subscriberCount;
+    @ManyToOne
+    @JoinColumn(name = "keyword_id", nullable = false)
+    private Keywords keywords;
 
-    public Interest(String name, int subscriberCount) {
-        this.name = name;
-        this.subscriberCount = subscriberCount;
-    }
 }
