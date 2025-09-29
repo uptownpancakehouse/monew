@@ -2,8 +2,12 @@ package com.uphouse.monew.infrastructure.batch.job;
 
 import com.uphouse.monew.domain.article.domain.Article;
 import com.uphouse.monew.domain.article.dto.RssArticle;
-import com.uphouse.monew.infrastructure.batch.processor.RssItemProcessor;
-import com.uphouse.monew.infrastructure.batch.reader.RssItemReader;
+import com.uphouse.monew.infrastructure.batch.processor.ChosunRssProcessor;
+import com.uphouse.monew.infrastructure.batch.processor.HankyungRssProcessor;
+import com.uphouse.monew.infrastructure.batch.processor.YonhapRssProcessor;
+import com.uphouse.monew.infrastructure.batch.reader.ChosunRssReader;
+import com.uphouse.monew.infrastructure.batch.reader.HankyungRssReader;
+import com.uphouse.monew.infrastructure.batch.reader.YonhapRssReader;
 import com.uphouse.monew.infrastructure.batch.writer.RssItemWriter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -20,8 +24,16 @@ import org.springframework.transaction.PlatformTransactionManager;
 @Configuration
 @RequiredArgsConstructor
 public class RssArticleJobConfig {
-    private final RssItemReader rssItemReader;
-    private final RssItemProcessor rssItemProcessor;
+
+    private final HankyungRssReader rssItemReader;
+    private final HankyungRssProcessor rssItemProcessor;
+
+    private final ChosunRssReader chosunItemReader;
+    private final ChosunRssProcessor chosunItemProcessor;
+
+    private final YonhapRssReader yonhapRssReader;
+    private final YonhapRssProcessor yonhapRssProcessor;
+
     private final RssItemWriter rssItemWriter;
 
     private final JobRepository jobRepository;
@@ -31,9 +43,9 @@ public class RssArticleJobConfig {
      * RSS 기사 수집 Job을 정의합니다.
      */
     @Bean
-    public Job fetchRssArticlesJob() {
+    public Job fetchHankyungArticlesJob() {
         return new JobBuilder("fetchRssArticlesJob", jobRepository)
-                .start(fetchRssArticlesStep()) // Job이 실행될 때 시작할 Step을 지정합니다.
+                .start(fetchHankyungArticlesStep()) // Job이 실행될 때 시작할 Step을 지정합니다.
                 .build();
     }
 
@@ -42,12 +54,46 @@ public class RssArticleJobConfig {
      * Step은 Reader, Processor, Writer를 포함하는 실질적인 작업 단위입니다.
      */
     @Bean
-    public Step fetchRssArticlesStep() {
+    public Step fetchHankyungArticlesStep() {
         return new StepBuilder("fetchRssArticlesStep", jobRepository)
                 // <Input, Output> 타입을 지정. Reader의 반환 타입이자 Processor의 입력 타입, Processor의 반환 타입이자 Writer의 입력 타입
                 .<RssArticle, Article>chunk(10, platformTransactionManager) // 한 번에 처리할 데이터 양(Chunk)을 10으로 설정합니다.
                 .reader(rssItemReader)
                 .processor(rssItemProcessor)
+                .writer(rssItemWriter)
+                .build();
+    }
+
+    @Bean
+    public Job fetchChosunArticlesJob() {
+        return new JobBuilder("fetchChosunArticlesJob", jobRepository)
+                .start(fetchChosunRssArticlesStep())
+                .build();
+    }
+
+    @Bean
+    public Step fetchChosunRssArticlesStep() {
+        return new StepBuilder("fetchChosunRssArticlesStep", jobRepository)
+                .<RssArticle, Article>chunk(10, platformTransactionManager)
+                .reader(chosunItemReader)
+                .processor(chosunItemProcessor)
+                .writer(rssItemWriter)
+                .build();
+    }
+
+    @Bean
+    public Job fetchYonhapArticlesJob() {
+        return new JobBuilder("fetchYonhapArticlesJob", jobRepository)
+                .start(fetchYonhapRssArticlesStep())
+                .build();
+    }
+
+    @Bean
+    public Step fetchYonhapRssArticlesStep() {
+        return new StepBuilder("fetchYonhapRssArticlesStep", jobRepository)
+                .<RssArticle, Article>chunk(10, platformTransactionManager)
+                .reader(yonhapRssReader)
+                .processor(yonhapRssProcessor)
                 .writer(rssItemWriter)
                 .build();
     }

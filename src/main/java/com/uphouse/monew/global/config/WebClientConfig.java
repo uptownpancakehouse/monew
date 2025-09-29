@@ -11,4 +11,11 @@ public class WebClientConfig {
     public WebClient webClient(WebClient.Builder builder) {
         return builder.build();
     }
+
+    @Bean
+    public WebClient naverWebClient(WebClient.Builder builder) {
+        return builder
+                .baseUrl("https://openapi.naver.com")
+                .build();
+    }
 }

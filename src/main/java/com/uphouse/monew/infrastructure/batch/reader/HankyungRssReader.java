@@ -13,22 +13,18 @@ import java.util.List;
 @Slf4j
 @Component
 @RequiredArgsConstructor
-public class RssItemReader implements ItemReader<RssArticle> {
+public class HankyungRssReader implements ItemReader<RssArticle> {
 
     private final HankyungRssClient hankyungRssClient;
     private Iterator<RssArticle> iterator;
 
     @Override
     public RssArticle read() throws Exception {
-        if (iterator == null || !iterator.hasNext()) {
+        if (iterator == null) {
             List<RssArticle> articleList = hankyungRssClient.fetchArticles();
-
-
-
-            if(articleList == null || articleList.isEmpty()) {
+            if (articleList == null || articleList.isEmpty()) {
                 return null;
             }
-
             this.iterator = articleList.iterator();
         }
         return iterator.hasNext() ? iterator.next() : null;

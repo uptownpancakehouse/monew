@@ -21,15 +21,21 @@ public class RomeRssParser implements RssParser {
 
     @Override
     public List<RssArticle> parse(String xml) {
-        try (StringReader reader = new StringReader(xml)) {
+        try {
+            String safeXml = xml
+                    .replaceAll("<!DOCTYPE[^>]*>", "")
+                    .replaceAll("<!ENTITY[^>]*>", "")
+                    .replaceAll("(?s)<script.*?</script>", "")
+                    .replaceAll("&(?![a-zA-Z]+;)", "&amp;");
 
-            SyndFeed feed = new SyndFeedInput().build(reader);
+            try (StringReader reader = new StringReader(safeXml)) {
+                SyndFeed feed = new SyndFeedInput().build(reader);
 
-            return feed.getEntries().stream()
-                    .map(mapper::toDto)
-                    .collect(Collectors.toList());
-        }
-        catch (Exception e) {
+                return feed.getEntries().stream()
+                        .map(mapper::toDto)
+                        .collect(Collectors.toList());
+            }
+        } catch (Exception e) {
             log.error("RSS XML 파싱 실패.", e);
             return List.of();
         }
