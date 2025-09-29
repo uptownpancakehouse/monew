@@ -3,9 +3,10 @@ package com.uphouse.monew.domain.user.dto.response;
 import com.uphouse.monew.domain.user.domain.User;
 
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 public record UserResponse(
-    Long id,
+    UUID id,
     String email,
     String nickname,
     LocalDateTime createdAt

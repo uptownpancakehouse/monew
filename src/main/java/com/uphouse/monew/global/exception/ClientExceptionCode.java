@@ -7,4 +7,5 @@ public enum ClientExceptionCode {
     USER_INVALID_FORMAT,
     USER_NOT_FOUND,
     LOGIN_ERROR,
+    COMMENT_NOT_FOUND,
 }

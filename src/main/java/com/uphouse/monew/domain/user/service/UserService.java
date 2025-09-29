@@ -12,6 +12,8 @@ import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.util.UUID;
+
 @Service
 @RequiredArgsConstructor
 public class UserService {
@@ -34,7 +36,7 @@ public class UserService {
     }
 
     @Transactional
-    public UserResponse update(Long userId, UserUpdateRequest request) {
+    public UserResponse update(UUID userId, UserUpdateRequest request) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new GlobalException(ExceptionCode.USER_NOT_FOUND));
         user.changeNickname(request.nickname());
@@ -42,7 +44,7 @@ public class UserService {
     }
 
     @Transactional
-    public void delete(Long userId) {
+    public void delete(UUID userId) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new GlobalException(ExceptionCode.USER_NOT_FOUND));
         user.delete();
@@ -50,7 +52,7 @@ public class UserService {
     }
 
     @Transactional
-    public void deleteHard(Long userId) {
+    public void deleteHard(UUID userId) {
         // TODO(robolovo) - 논리 삭제 후 1일 경과 뒤 유저 정보가 완전히 삭제되도록 하세요.
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new GlobalException(ExceptionCode.USER_NOT_FOUND));
