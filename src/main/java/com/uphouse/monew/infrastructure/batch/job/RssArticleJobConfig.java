@@ -2,8 +2,8 @@ package com.uphouse.monew.infrastructure.batch.job;
 
 import com.uphouse.monew.domain.article.domain.Article;
 import com.uphouse.monew.domain.article.dto.RssArticle;
-import com.uphouse.monew.infrastructure.batch.processor.RssItemProcessor;
-import com.uphouse.monew.infrastructure.batch.reader.RssItemReader;
+import com.uphouse.monew.infrastructure.batch.processor.HankyungRssProcessor;
+import com.uphouse.monew.infrastructure.batch.reader.HankyungRssReader;
 import com.uphouse.monew.infrastructure.batch.writer.RssItemWriter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -20,8 +20,8 @@ import org.springframework.transaction.PlatformTransactionManager;
 @Configuration
 @RequiredArgsConstructor
 public class RssArticleJobConfig {
-    private final RssItemReader rssItemReader;
-    private final RssItemProcessor rssItemProcessor;
+    private final HankyungRssReader rssItemReader;
+    private final HankyungRssProcessor rssItemProcessor;
     private final RssItemWriter rssItemWriter;
 
     private final JobRepository jobRepository;
