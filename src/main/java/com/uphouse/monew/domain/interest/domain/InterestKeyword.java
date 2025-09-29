@@ -23,4 +23,8 @@ public class InterestKeyword {
     @JoinColumn(name = "keyword_id", nullable = false)
     private Keywords keywords;
 
+    public InterestKeyword(Interest interest, Keywords keywords) {
+        this.interest = interest;
+        this.keywords = keywords;
+    }
 }
