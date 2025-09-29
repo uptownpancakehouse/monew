@@ -4,8 +4,10 @@ import com.uphouse.monew.domain.article.domain.Article;
 import com.uphouse.monew.domain.article.dto.RssArticle;
 import com.uphouse.monew.infrastructure.batch.processor.ChosunRssProcessor;
 import com.uphouse.monew.infrastructure.batch.processor.HankyungRssProcessor;
+import com.uphouse.monew.infrastructure.batch.processor.YonhapRssProcessor;
 import com.uphouse.monew.infrastructure.batch.reader.ChosunRssReader;
 import com.uphouse.monew.infrastructure.batch.reader.HankyungRssReader;
+import com.uphouse.monew.infrastructure.batch.reader.YonhapRssReader;
 import com.uphouse.monew.infrastructure.batch.writer.RssItemWriter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -28,6 +30,9 @@ public class RssArticleJobConfig {
 
     private final ChosunRssReader chosunItemReader;
     private final ChosunRssProcessor chosunItemProcessor;
+
+    private final YonhapRssReader yonhapRssReader;
+    private final YonhapRssProcessor yonhapRssProcessor;
 
     private final RssItemWriter rssItemWriter;
 
@@ -72,6 +77,23 @@ public class RssArticleJobConfig {
                 .<RssArticle, Article>chunk(10, platformTransactionManager)
                 .reader(chosunItemReader)
                 .processor(chosunItemProcessor)
+                .writer(rssItemWriter)
+                .build();
+    }
+
+    @Bean
+    public Job fetchYonhapArticlesJob() {
+        return new JobBuilder("fetchYonhapArticlesJob", jobRepository)
+                .start(fetchYonhapRssArticlesStep())
+                .build();
+    }
+
+    @Bean
+    public Step fetchYonhapRssArticlesStep() {
+        return new StepBuilder("fetchYonhapRssArticlesStep", jobRepository)
+                .<RssArticle, Article>chunk(10, platformTransactionManager)
+                .reader(yonhapRssReader)
+                .processor(yonhapRssProcessor)
                 .writer(rssItemWriter)
                 .build();
     }
