@@ -15,8 +15,9 @@ import org.springframework.web.bind.annotation.RestController;
 public class TestController {
 
     private final JobLauncher jobLauncher;
-    private final Job fetchHankyungArticlesJob; // RssArticleBatchConfig에 정의된 Job Bean을 주입받습니다.
+    private final Job fetchHankyungArticlesJob;
     private final Job fetchChosunArticlesJob;
+    private final Job fetchYonhapArticlesJob;
 
     @GetMapping("/force-fetch")
     public String forceFetchNews() {
@@ -28,7 +29,7 @@ public class TestController {
                     .toJobParameters();
 
             // jobLauncher를 사용하여 Job을 실행합니다.
-            jobLauncher.run(fetchChosunArticlesJob, jobParameters);
+            jobLauncher.run(fetchHankyungArticlesJob, jobParameters);
 
             return "OK - Batch job has been requested.";
 
