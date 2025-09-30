@@ -1,16 +1,14 @@
 package com.uphouse.monew.domain.interest.controller;
 
 import com.uphouse.monew.domain.interest.dto.InterestCreateRequest;
-import com.uphouse.monew.domain.interest.dto.InterestCreateResponse;
+import com.uphouse.monew.domain.interest.dto.InterestDto;
+import com.uphouse.monew.domain.interest.dto.InterestQueryParams;
 import com.uphouse.monew.domain.interest.service.InterestService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 @RequiredArgsConstructor
 @RestController
@@ -20,15 +18,21 @@ public class InterestController {
     private final InterestService interestService;
 
     @PostMapping
-    public ResponseEntity<InterestCreateResponse> create(@RequestBody InterestCreateRequest request) {
-        InterestCreateResponse response = interestService.create(request);
+    public ResponseEntity<InterestDto> create(@RequestBody InterestCreateRequest request) {
+        InterestDto response = interestService.create(request);
+        return ResponseEntity.ok(response);
+    }
+
+    @GetMapping
+    public ResponseEntity<List<InterestDto>> getInterests(@RequestHeader("Monew-Request-User-ID") UUID userId, InterestQueryParams  params) {
+        List<InterestDto> response = interestService.getInterests(userId, params);
         return ResponseEntity.ok(response);
     }
 
     @PatchMapping("/{interestId}")
-    public ResponseEntity<InterestCreateResponse> update(@PathVariable Long interestId, @RequestBody Map<String, List<String>> body) {
+    public ResponseEntity<InterestDto> update(@PathVariable Long interestId, @RequestBody Map<String, List<String>> body) {
         Set<String> keywords = new HashSet<>(body.get("keywords")); // 중복된 키워드 제거
-        InterestCreateResponse response = interestService.update(interestId, keywords);
+        InterestDto response = interestService.update(interestId, keywords);
         return ResponseEntity.ok(response);
     }
 }

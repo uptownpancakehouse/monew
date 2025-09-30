@@ -5,10 +5,10 @@ import lombok.Builder;
 import java.util.List;
 
 @Builder
-public record InterestCreateResponse(
+public record InterestDto(
         Long id,
         String name,
         List<String> keywords,
-        Long subscriberCount,
-        boolean subscribedByMe
+        int subscriberCount,
+        Boolean subscribedByMe
 ) {}

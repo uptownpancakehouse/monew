@@ -3,18 +3,22 @@ package com.uphouse.monew.domain.interest.service;
 import com.uphouse.monew.domain.interest.domain.Interest;
 import com.uphouse.monew.domain.interest.domain.InterestKeyword;
 import com.uphouse.monew.domain.interest.domain.Keywords;
+import com.uphouse.monew.domain.interest.domain.UserInterest;
 import com.uphouse.monew.domain.interest.dto.InterestCreateRequest;
-import com.uphouse.monew.domain.interest.dto.InterestCreateResponse;
-import com.uphouse.monew.domain.interest.repository.InterestKeywordRepository;
-import com.uphouse.monew.domain.interest.repository.InterestRepository;
-import com.uphouse.monew.domain.interest.repository.KeywordRepository;
-import com.uphouse.monew.domain.interest.repository.UserInterestRepository;
+import com.uphouse.monew.domain.interest.dto.InterestDto;
+import com.uphouse.monew.domain.interest.dto.InterestQueryParams;
+import com.uphouse.monew.domain.interest.repository.*;
+import com.uphouse.monew.domain.user.domain.User;
 import com.uphouse.monew.domain.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
-import java.util.*;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -25,35 +29,46 @@ public class InterestService {
     private final InterestRepository interestRepository;
     private final KeywordRepository keywordRepository;
     private final InterestKeywordRepository interestKeywordRepository;
+    private final InterestKeywordCustomRepository interestKeywordCustomRepository;
     private final UserRepository userRepository;
     private final UserInterestRepository userInterestRepository;
 
-    public InterestCreateResponse create(InterestCreateRequest request) {
+    @Transactional
+    public InterestDto create(InterestCreateRequest request) {
 
         Interest interest = saveInterest(request.name());    // 관심사 저장
         List<String> keywordsList = saveKeywords(interest, request.keywords());          // 키워드 저장
 
-        return InterestCreateResponse.builder()
-                .id(interest != null ? interest.getId() : null)
-                .name(interest != null ? interest.getName() : request.name())
+        return InterestDto.builder()
+                .id(interest.getId())
+                .name(interest.getName())
                 .keywords(keywordsList)
-                .subscriberCount(0L)
+                .subscriberCount(0)
                 .subscribedByMe(false)
                 .build();
     }
 
-    public InterestCreateResponse update(Long interestId, Set<String> keywords) {
+    @Transactional(readOnly = true)
+    public List<InterestDto> getInterests(UUID userId, InterestQueryParams params) {
+        // 검색 조건에 맞는 관심사 조회
+        List<InterestDto> list = interestKeywordCustomRepository.findInterestList(params);
+
+        // 구독 여부 업데이트 후 return
+        return updateSubscribedByMe(userId, list);
+    }
+
+    public InterestDto update(Long interestId, Set<String> keywords) {
 
         Interest interest = interestRepository.findById(interestId)
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 관심사: " + interestId));
 
         List<String> keywordsList = saveKeywords(interest, keywords);
 
-        return InterestCreateResponse.builder()
+        return InterestDto.builder()
                 .id(interest.getId())
                 .name(interest.getName())
                 .keywords(keywordsList)
-                .subscriberCount(0L)
+                .subscriberCount(0)
                 .subscribedByMe(false)
                 .build();
     }
@@ -106,5 +121,30 @@ public class InterestService {
         // 문자열만 추출
         return keywordsSet.stream()
                 .map(Keywords::getKeyword).toList();
+    }
+
+    private List<InterestDto> updateSubscribedByMe(UUID userId, List<InterestDto> interestList) {
+        // 사용자 조회
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new IllegalArgumentException("잘못된 사용자 아이디 입니다. " + userId));
+
+        // 사용자가 구독한 관심사 조회
+        List<UserInterest> userInterests = userInterestRepository.findByUser(user);
+
+        // 구독한 interestId를 Set으로 모음
+        Set<Long> subscribedInterestIds = userInterests.stream()
+                .map(ui -> ui.getInterest().getId())
+                .collect(Collectors.toSet());
+
+        // subscribedByMe 반영해서 새로운 리스트 반환
+        return interestList.stream()
+                .map(dto -> InterestDto.builder()
+                        .id(dto.id())
+                        .name(dto.name())
+                        .keywords(dto.keywords())
+                        .subscriberCount(dto.subscriberCount())
+                        .subscribedByMe(subscribedInterestIds.contains(dto.id()))
+                        .build())
+                .toList();
     }
 }
