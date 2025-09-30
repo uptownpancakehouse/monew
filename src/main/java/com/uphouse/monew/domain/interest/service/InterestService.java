@@ -11,10 +11,13 @@ import com.uphouse.monew.domain.interest.repository.KeywordRepository;
 import com.uphouse.monew.domain.interest.repository.UserInterestRepository;
 import com.uphouse.monew.domain.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class InterestService {
@@ -25,61 +28,83 @@ public class InterestService {
     private final UserRepository userRepository;
     private final UserInterestRepository userInterestRepository;
 
-
-
     public InterestCreateResponse create(InterestCreateRequest request) {
 
-        Interest interest = saveInterest(request.name()).orElse(null);      // 관심사 저장
-        List<Keywords> keywordList = saveKeywords(request.keywords());              // 키워드 저장
-
-        List<String> keywords = new ArrayList<>();
-
-        // 관심사 - 키워드 저장
-        keywordList.forEach(keyword -> {
-            interestKeywordRepository.save(new InterestKeyword(interest, keyword));
-            keywords.add(keyword.getKeyword());
-        });
+        Interest interest = saveInterest(request.name());    // 관심사 저장
+        List<String> keywordsList = saveKeywords(interest, request.keywords());          // 키워드 저장
 
         return InterestCreateResponse.builder()
                 .id(interest != null ? interest.getId() : null)
                 .name(interest != null ? interest.getName() : request.name())
-                .keywords(keywords)
+                .keywords(keywordsList)
                 .subscriberCount(0L)
                 .subscribedByMe(false)
                 .build();
     }
 
-    private Optional<Interest> saveInterest(String name) {
+    public InterestCreateResponse update(Long interestId, Set<String> keywords) {
 
-        // 1. 완전 동일한 관심사 존재 여부
+        Interest interest = interestRepository.findById(interestId)
+                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 관심사: " + interestId));
+
+        List<String> keywordsList = saveKeywords(interest, keywords);
+
+        return InterestCreateResponse.builder()
+                .id(interest.getId())
+                .name(interest.getName())
+                .keywords(keywordsList)
+                .subscriberCount(0L)
+                .subscribedByMe(false)
+                .build();
+    }
+
+    private Interest saveInterest(String name) {
+
+        // 완전 동일한 관심사 존재 여부 - 존재하면 찾은 관심사 return
         Interest interest = interestRepository.findByName(name).orElse(null);
 
         if (interest != null) {
-            return Optional.of(interest);
+            return interest;
         }
 
         // 2. 유사 관심사 존재 여부 (80% 이상)
         if (interestRepository.existsBySimilarName(name)) {
-            return Optional.empty(); // 등록 안 함
+            throw new IllegalArgumentException("유사한 이름의 관심사가 이미 존재합니다.");
         }
 
-        // 3. 새로운 관심사 등록
-        Interest newInterest = interestRepository.save(new Interest(name, 0));
-        return Optional.of(newInterest);
+        return interestRepository.save(new Interest(name, 0));
     }
 
-    private List<Keywords> saveKeywords(List<String> keywords) {
-        Set<String> keywordSet = new HashSet<>();
-        List<Keywords> keywordList = new ArrayList<>();
+    private List<String> saveKeywords(Interest interest, Set<String> keywords) {
+        // 이미 존재하는 키워드인지 조회
+        List<Keywords> existedKeywords = keywordRepository.findByKeywords(keywords);
 
-        keywordRepository.findAll().forEach(keyword -> keywordSet.add(keyword.getKeyword()));
+        // 존재하는 키워드의 문자열만 추출
+        Set<String> existedKeywordStrings = existedKeywords.stream()
+                .map(Keywords::getKeyword)
+                .collect(Collectors.toSet());
 
-        keywords.forEach(keyword -> {
-            if(!keywordSet.contains(keyword)) {
-                keywordList.add(keywordRepository.save(new Keywords(keyword)));
-            }
+        // 새로 들어온 keywords 중에서 DB에 없는 것만 필터링
+        List<Keywords> newKeywords = keywords.stream()
+                .filter(keyword -> !existedKeywordStrings.contains(keyword))
+                .map(Keywords::new) // 생성자: new Keywords("주식")
+                .toList();
+
+        // 새로운 키워드를 DB에 저장
+        List<Keywords> savedNewKeywords = keywordRepository.saveAll(newKeywords);
+
+        // 관심사 - 키워드 저장
+        savedNewKeywords.forEach(keyword -> {
+            interestKeywordRepository.save(new InterestKeyword(interest, keyword));
         });
 
-        return keywordList;
+        // 기존 + 새로 저장한 키워드 합쳐서 반환
+        Set<Keywords> keywordsSet = new HashSet<>();
+        keywordsSet.addAll(existedKeywords);
+        keywordsSet.addAll(savedNewKeywords);
+
+        // 문자열만 추출
+        return keywordsSet.stream()
+                .map(Keywords::getKeyword).toList();
     }
 }

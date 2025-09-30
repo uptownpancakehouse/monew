@@ -1,8 +1,8 @@
 package com.uphouse.monew.domain.interest.dto;
 
-import java.util.List;
+import java.util.Set;
 
 public record InterestCreateRequest(
         String name,
-        List<String> keywords
+        Set<String> keywords // 중복된 키워드 제거
 ) {}
