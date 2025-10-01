@@ -13,6 +13,7 @@ import org.springframework.batch.core.configuration.annotation.StepScope;
 import org.springframework.batch.item.ItemProcessor;
 import org.springframework.stereotype.Component;
 
+import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
@@ -61,6 +62,7 @@ public class HankyungRssProcessor implements ItemProcessor<RssArticle, Article>,
                 .publishDate(article.publishedDate())
                 .commentCount(0)
                 .viewCount(0L)
+                .createdAt(LocalDateTime.now())
                 .build();
     }
 }

@@ -3,6 +3,7 @@ package com.uphouse.monew.domain.article.domain;
 import com.uphouse.monew.domain.article.dto.SourceType;
 import jakarta.persistence.*;
 import lombok.*;
+import org.springframework.data.annotation.CreatedDate;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
@@ -15,8 +16,8 @@ import java.util.UUID;
 public class Article {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
-    private UUID id;
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
 
     @Enumerated(EnumType.STRING)
     private SourceType source;
@@ -32,4 +33,8 @@ public class Article {
     private Integer commentCount;
 
     private Long viewCount;
+
+    @CreatedDate
+    @Column(nullable = false, updatable = false)
+    private LocalDateTime createdAt;
 }
