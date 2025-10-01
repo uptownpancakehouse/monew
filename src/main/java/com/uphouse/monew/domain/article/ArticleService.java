@@ -1,4 +1,4 @@
-package com.uphouse.monew.domain.article.service;
+package com.uphouse.monew.domain.article;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;

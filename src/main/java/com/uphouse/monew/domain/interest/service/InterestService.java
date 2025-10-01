@@ -10,15 +10,13 @@ import com.uphouse.monew.domain.interest.dto.InterestQueryParams;
 import com.uphouse.monew.domain.interest.repository.*;
 import com.uphouse.monew.domain.user.domain.User;
 import com.uphouse.monew.domain.user.repository.UserRepository;
+import com.uphouse.monew.global.dto.PageResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -49,12 +47,36 @@ public class InterestService {
     }
 
     @Transactional(readOnly = true)
-    public List<InterestDto> getInterests(UUID userId, InterestQueryParams params) {
-        // 검색 조건에 맞는 관심사 조회
-        List<InterestDto> list = interestKeywordCustomRepository.findInterestList(params);
+    public PageResponse getInterests(UUID userId, InterestQueryParams params) {
 
-        // 구독 여부 업데이트 후 return
-        return updateSubscribedByMe(userId, list);
+        Long total = 0L;
+        List<InterestDto> interestList = new ArrayList<>();
+
+        if(params.keyword() == null || params.keyword().isEmpty()){
+            total = interestRepository.countTotal();
+            interestList = interestKeywordCustomRepository.findInterestBySearch(params);
+        }
+
+        total = interestKeywordRepository.countInterestsByKeyword(params.keyword());
+        interestList = interestKeywordCustomRepository.findInterestsByKeyword(params);
+
+        String nextCursor = null;
+        String nextAfter = null;
+        boolean hasNext = interestList.size() > params.limit();
+
+        if(hasNext) {
+            InterestDto lastItem = interestList.get(interestList.size() - 1);
+            nextCursor = lastItem.id().toString();
+            interestList = interestList.subList(0, params.limit()); // 초과분 제거
+        }
+
+        return PageResponse.builder()
+                .content(interestList)
+                .nextCursor(nextCursor)
+                .size(interestList.size() - 1)
+                .totalElements(total)
+                .hasNext(hasNext)
+                .build();
     }
 
     public InterestDto update(Long interestId, Set<String> keywords) {
@@ -108,15 +130,15 @@ public class InterestService {
         // 새로운 키워드를 DB에 저장
         List<Keywords> savedNewKeywords = keywordRepository.saveAll(newKeywords);
 
-        // 관심사 - 키워드 저장
-        savedNewKeywords.forEach(keyword -> {
-            interestKeywordRepository.save(new InterestKeyword(interest, keyword));
-        });
-
         // 기존 + 새로 저장한 키워드 합쳐서 반환
         Set<Keywords> keywordsSet = new HashSet<>();
         keywordsSet.addAll(existedKeywords);
         keywordsSet.addAll(savedNewKeywords);
+
+        // 관심사 - 키워드 저장
+        keywordsSet.forEach(keyword -> {
+            interestKeywordRepository.save(new InterestKeyword(interest, keyword));
+        });
 
         // 문자열만 추출
         return keywordsSet.stream()
@@ -147,4 +169,5 @@ public class InterestService {
                         .build())
                 .toList();
     }
+
 }

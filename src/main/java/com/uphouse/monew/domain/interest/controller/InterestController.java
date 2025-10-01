@@ -4,6 +4,7 @@ import com.uphouse.monew.domain.interest.dto.InterestCreateRequest;
 import com.uphouse.monew.domain.interest.dto.InterestDto;
 import com.uphouse.monew.domain.interest.dto.InterestQueryParams;
 import com.uphouse.monew.domain.interest.service.InterestService;
+import com.uphouse.monew.global.dto.PageResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -24,8 +25,8 @@ public class InterestController {
     }
 
     @GetMapping
-    public ResponseEntity<List<InterestDto>> getInterests(@RequestHeader("Monew-Request-User-ID") UUID userId, InterestQueryParams  params) {
-        List<InterestDto> response = interestService.getInterests(userId, params);
+    public ResponseEntity<PageResponse> getInterests(@RequestHeader("Monew-Request-User-ID") UUID userId, InterestQueryParams  params) {
+         PageResponse response = interestService.getInterests(userId, params);
         return ResponseEntity.ok(response);
     }
 

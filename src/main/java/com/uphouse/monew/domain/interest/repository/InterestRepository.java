@@ -16,4 +16,7 @@ public interface InterestRepository extends JpaRepository<Interest, Long> {
             nativeQuery = true
     )
     boolean existsBySimilarName(@Param("name") String name);
+
+    @Query("SELECT COUNT(i.id) FROM Interest i")
+    Long countTotal();
 }

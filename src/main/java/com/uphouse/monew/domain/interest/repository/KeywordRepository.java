@@ -14,4 +14,6 @@ public interface KeywordRepository extends JpaRepository<Keywords, Long> {
 
     @Query("SELECT k FROM Keywords k WHERE k.keyword IN :keywords")
     List<Keywords> findByKeywords(@Param("keywords") Set<String> keywords);
+
+    boolean existsByKeyword(String keyword);
 }

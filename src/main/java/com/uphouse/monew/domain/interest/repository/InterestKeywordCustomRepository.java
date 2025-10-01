@@ -2,81 +2,127 @@ package com.uphouse.monew.domain.interest.repository;
 
 import com.querydsl.core.BooleanBuilder;
 import com.querydsl.core.Tuple;
-import com.querydsl.core.group.GroupBy;
 import com.querydsl.core.types.Order;
 import com.querydsl.core.types.OrderSpecifier;
 import com.querydsl.core.types.Projections;
-import com.querydsl.core.types.dsl.Expressions;
 import com.querydsl.jpa.impl.JPAQueryFactory;
-import com.uphouse.monew.domain.interest.domain.Interest;
-import com.uphouse.monew.domain.interest.domain.QInterest;
-import com.uphouse.monew.domain.interest.domain.QInterestKeyword;
-import com.uphouse.monew.domain.interest.domain.QKeywords;
+import com.uphouse.monew.domain.interest.domain.*;
 import com.uphouse.monew.domain.interest.dto.InterestDto;
 import com.uphouse.monew.domain.interest.dto.InterestQueryParams;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
-import org.springframework.transaction.annotation.Transactional;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Repository
 @RequiredArgsConstructor
 public class InterestKeywordCustomRepository {
 
     private final JPAQueryFactory queryFactory;
+    private final KeywordRepository keywordRepository;
 
-
-
-    public List<InterestDto> findInterestList(InterestQueryParams  params) {
+    /**
+     * 키워드 없이 일반 조회, order by 만
+     */
+    public List<InterestDto> findInterestBySearch(InterestQueryParams params) {
 
         QInterest interest = QInterest.interest;
-        QKeywords keywords = QKeywords.keywords;
-        QInterestKeyword interestKeyword = QInterestKeyword.interestKeyword;
 
-        // Where
-        BooleanBuilder where = new BooleanBuilder();
-        if(params.keyword() != null && !params.keyword().trim().isBlank()) where.and(keywords.keyword.eq(params.keyword()));
+        OrderSpecifier<?> orderSpecifier = makeOrderSpecifier(params.direction(), params.orderBy());
 
-        // Order
-        Order order = "desc".equalsIgnoreCase(params.direction()) ? Order.DESC : Order.ASC ;
-        OrderSpecifier<?> orderSpecifier;
-
-        switch (params.orderBy()) {
-            case "name" -> orderSpecifier = new OrderSpecifier<>(order, interest.name);
-            case "subscriberCount" -> orderSpecifier = new OrderSpecifier<>(order, interest.subscriberCount);
-            default -> orderSpecifier = new OrderSpecifier<>(Order.ASC, interest.name);
-        }
-
-        List<Tuple> rows = queryFactory
-                .select(interest.id, interest.name, keywords.keyword, interest.subscriberCount)
-                .from(interestKeyword)
-                .join(interest).on(interest.id.eq(interestKeyword.interest.id))
-                .join(keywords).on(keywords.id.eq(interestKeyword.keywords.id))
-                .where(where)
+        // 관심사 목록 조회
+        List<Interest> interests = queryFactory.selectFrom(interest)
                 .orderBy(orderSpecifier)
+                .limit(params.limit() + 1)
                 .fetch();
 
-        Map<Long, InterestDto> grouped = new HashMap<>();
+        return findInterestKeyword(interests);
+    }
 
-        rows.forEach(row -> {
-            Long id = row.get(interest.id);
-            String name = row.get(interest.name);
-            String keyword = row.get(keywords.keyword);
-            int subscriberCount = row.get(interest.subscriberCount);
+    /**
+     * 키워드로 찾은 관심사
+     * */
+    public List<InterestDto> findInterestsByKeyword(InterestQueryParams params) {
 
-            grouped.computeIfAbsent(id, key -> new InterestDto(
-                    id,
-                    name,
-                    new ArrayList<>(),   // 키워드 리스트 생성
-                    subscriberCount,
-                    false
-            )).keywords().add(keyword); // 기존 DTO 의 키워드 리스트에 추가
-        });
+        if (!keywordRepository.existsByKeyword(params.keyword())) {
+            return Collections.emptyList();
+        }
 
-        return new ArrayList<>(grouped.values());
+        QInterestKeyword ik = QInterestKeyword.interestKeyword;
+        QInterest i = QInterest.interest;
+        QKeywords k = QKeywords.keywords;
+
+        OrderSpecifier<?> orderSpecifier = makeOrderSpecifier(params.direction(), params.orderBy());
+
+        // 키워드로 찾은 관심사 목록
+        List<Interest> interests = queryFactory
+                .select(i)
+                .from(ik)
+                .join(ik.interest, i)
+                .join(ik.keywords, k)
+                .where(k.keyword.eq(params.keyword()))
+                .orderBy(orderSpecifier)
+                .limit(params.limit() + 1)
+                .fetch();
+
+        return findInterestKeyword(interests);
+    }
+
+    /**
+     * 관심사(Interest) id로 키워드 찾을 다음 DTO로 변환
+     */
+    private List<InterestDto> findInterestKeyword(List<Interest> interests) {
+
+        // 2) 관심사 아이디만 추출
+        List<Long> interestIds = interests.stream().map(Interest::getId).toList();
+
+        QInterestKeyword ik = QInterestKeyword.interestKeyword;
+        QKeywords k = QKeywords.keywords;
+
+        List<Tuple> ikTuples = queryFactory
+                .select(ik.interest.id, k.keyword)
+                .from(ik)
+                .join(ik.keywords, k)
+                .where(ik.interest.id.in(interestIds))
+                .fetch();
+
+        // 4) interestId -> keywordList 맵핑
+        Map<Long, List<String>> keywordMap = ikTuples.stream()
+                .collect(Collectors.groupingBy(
+                        t -> t.get(ik.interest.id),
+                        Collectors.mapping(t -> t.get(k.keyword), Collectors.toList())
+                ));
+
+        return interests.stream()
+                .map(in -> InterestDto.builder()
+                        .id(in.getId())
+                        .name(in.getName())
+                        .subscriberCount(in.getSubscriberCount())
+                        .keywords(keywordMap.getOrDefault(in.getId(), List.of()))
+                        .subscribedByMe(false) // TODO: userId 기반 로직 추가
+                        .build())
+                .toList();
+    }
+
+    /**
+     * 동적으로 ORDER BY 쿼리 생성
+     * @param direction - DESC, ASC
+     * @param orderBy - name, subscriberCount
+     */
+    private OrderSpecifier<?> makeOrderSpecifier(String direction, String orderBy) {
+
+        QInterest interest = QInterest.interest;
+
+        Order order = "desc".equalsIgnoreCase(direction) ? Order.DESC : Order.ASC ;
+        OrderSpecifier<?> orderSpecifier;
+
+        switch (orderBy) {
+            case "name" -> orderSpecifier = new OrderSpecifier<>(order, interest.name);
+            case "subscriberCount" -> orderSpecifier = new OrderSpecifier<>(order, interest.subscriberCount);
+            default -> orderSpecifier = new OrderSpecifier<>(order, interest.name);
+        }
+
+        return orderSpecifier;
     }
 }
