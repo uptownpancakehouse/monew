@@ -103,7 +103,7 @@ public class InterestService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 사용자 입니다."));
 
-        UserInterest userInterest = interestSubscribe(user, interest); // 구독하기
+        interestSubscribe(user, interest, true); // 구독하기
         int interestSubscriberCount = userInterestRepository.countByInterestAndSubscribedByMeTrue(interest); // 구독자 수 카운트
         interest.subscriberCount(interestSubscriberCount); // 구독자 증가
         interestRepository.save(interest);
@@ -118,6 +118,20 @@ public class InterestService {
                 .interestSubscriberCount(interestSubscriberCount)
                 .createdAt(interest.getCreatedAt())
                 .build();
+    }
+
+    public void unsubscribe(Long interestId, UUID userId) {
+        Interest interest = interestRepository.findById(interestId)
+                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 관심사 입니다."));
+
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 사용자 입니다."));
+
+        interestSubscribe(user, interest, false); // 취소하기
+
+        int interestSubscriberCount = userInterestRepository.countByInterestAndSubscribedByMeTrue(interest); // 구독자 수 카운트
+        interest.subscriberCount(interestSubscriberCount); // 구독자 감소
+        interestRepository.save(interest);
     }
 
     private Interest saveInterest(String name) {
@@ -203,12 +217,12 @@ public class InterestService {
         return keywordsList.stream().map(Keywords::getKeyword).toList();
     }
 
-    private UserInterest interestSubscribe(User user, Interest interest) {
+    private void interestSubscribe(User user, Interest interest, boolean subscribedByMe) {
         UserInterest userInterest = userInterestRepository.findByUserAndInterest(user,interest)
-                .orElse(new UserInterest(user,interest,true));
+                .orElse(new UserInterest(user,interest, true));
 
-        userInterest.interestSubscribe(userInterest.getSubscribedByMe()); // 구독 or 해제
+        userInterest.interestSubscribe(subscribedByMe); // 구독
 
-        return userInterestRepository.save(userInterest);
+        userInterestRepository.save(userInterest);
     }
 }

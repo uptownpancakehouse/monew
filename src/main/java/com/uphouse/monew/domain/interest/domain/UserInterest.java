@@ -34,6 +34,6 @@ public class UserInterest {
     }
 
     public void interestSubscribe(boolean subscribedByMe) {
-        this.subscribedByMe = !subscribedByMe;
+        this.subscribedByMe = subscribedByMe;
     }
 }

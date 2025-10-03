@@ -43,4 +43,10 @@ public class InterestController {
         InterestSubscribeResponse response = interestService.subscribe(interestId, userId);
         return ResponseEntity.ok(response);
     }
+
+    @DeleteMapping("/{interestId}/subscriptions")
+    public ResponseEntity<String> unsubscribe(@PathVariable Long interestId, @RequestHeader("Monew-Request-User-ID") UUID userId) {
+        interestService.unsubscribe(interestId, userId);
+        return ResponseEntity.ok("success");
+    }
 }
