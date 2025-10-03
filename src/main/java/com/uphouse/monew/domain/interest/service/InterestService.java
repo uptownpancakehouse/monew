@@ -7,6 +7,7 @@ import com.uphouse.monew.domain.interest.domain.UserInterest;
 import com.uphouse.monew.domain.interest.dto.InterestCreateRequest;
 import com.uphouse.monew.domain.interest.dto.InterestDto;
 import com.uphouse.monew.domain.interest.dto.InterestQueryParams;
+import com.uphouse.monew.domain.interest.dto.InterestSubscribeResponse;
 import com.uphouse.monew.domain.interest.repository.*;
 import com.uphouse.monew.domain.user.domain.User;
 import com.uphouse.monew.domain.user.repository.UserRepository;
@@ -95,6 +96,30 @@ public class InterestService {
                 .build();
     }
 
+    public InterestSubscribeResponse subscribe(Long interestId, UUID userId) {
+        Interest interest = interestRepository.findById(interestId)
+                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 관심사 입니다."));
+
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 사용자 입니다."));
+
+        UserInterest userInterest = interestSubscribe(user, interest); // 구독하기
+        int interestSubscriberCount = userInterestRepository.countByInterestAndSubscribedByMeTrue(interest); // 구독자 수 카운트
+        interest.subscriberCount(interestSubscriberCount); // 구독자 증가
+        interestRepository.save(interest);
+
+        List<String> keywordsList = getKeywordsName(interest.getId());
+
+        return InterestSubscribeResponse.builder()
+                .id(user.getId())
+                .interestId(interest.getId())
+                .interestName(interest.getName())
+                .interestKeywords(keywordsList)
+                .interestSubscriberCount(interestSubscriberCount)
+                .createdAt(interest.getCreatedAt())
+                .build();
+    }
+
     private Interest saveInterest(String name) {
 
         // 완전 동일한 관심사 존재 여부 - 존재하면 찾은 관심사 return
@@ -114,7 +139,7 @@ public class InterestService {
 
     private List<String> saveKeywords(Interest interest, Set<String> keywords) {
         // 이미 존재하는 키워드인지 조회
-        List<Keywords> existedKeywords = keywordRepository.findByKeywords(keywords);
+        List<Keywords> existedKeywords = keywordRepository.findByKeywordIn(keywords);
 
         // 존재하는 키워드의 문자열만 추출
         Set<String> existedKeywordStrings = existedKeywords.stream()
@@ -170,4 +195,20 @@ public class InterestService {
                 .toList();
     }
 
+    private List<String> getKeywordsName(Long interestId) {
+        List<Keywords> keywordsList = interestKeywordRepository.findByInterestId(interestId).stream()
+                .map(InterestKeyword::getKeywords)
+                .toList();
+
+        return keywordsList.stream().map(Keywords::getKeyword).toList();
+    }
+
+    private UserInterest interestSubscribe(User user, Interest interest) {
+        UserInterest userInterest = userInterestRepository.findByUserAndInterest(user,interest)
+                .orElse(new UserInterest(user,interest,true));
+
+        userInterest.interestSubscribe(userInterest.getSubscribedByMe()); // 구독 or 해제
+
+        return userInterestRepository.save(userInterest);
+    }
 }

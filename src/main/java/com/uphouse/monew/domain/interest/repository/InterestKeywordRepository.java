@@ -5,6 +5,8 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.util.List;
+
 public interface InterestKeywordRepository extends JpaRepository<InterestKeyword, Long> {
 
     @Query("""
@@ -15,4 +17,6 @@ public interface InterestKeywordRepository extends JpaRepository<InterestKeyword
         WHERE k.keyword = :keyword
         """)
     long countInterestsByKeyword(@Param("keyword") String keyword);
+
+    List<InterestKeyword> findByInterestId(Long interestId);
 }
