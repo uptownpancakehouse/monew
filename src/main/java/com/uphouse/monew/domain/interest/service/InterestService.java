@@ -7,6 +7,7 @@ import com.uphouse.monew.domain.interest.domain.UserInterest;
 import com.uphouse.monew.domain.interest.dto.InterestCreateRequest;
 import com.uphouse.monew.domain.interest.dto.InterestDto;
 import com.uphouse.monew.domain.interest.dto.InterestQueryParams;
+import com.uphouse.monew.domain.interest.dto.InterestSubscribeResponse;
 import com.uphouse.monew.domain.interest.repository.*;
 import com.uphouse.monew.domain.user.domain.User;
 import com.uphouse.monew.domain.user.repository.UserRepository;
@@ -16,7 +17,10 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.*;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -25,9 +29,9 @@ import java.util.stream.Collectors;
 public class InterestService {
 
     private final InterestRepository interestRepository;
+    private final InterestCustomRepository interestCustomRepository;
     private final KeywordRepository keywordRepository;
     private final InterestKeywordRepository interestKeywordRepository;
-    private final InterestKeywordCustomRepository interestKeywordCustomRepository;
     private final UserRepository userRepository;
     private final UserInterestRepository userInterestRepository;
 
@@ -49,33 +53,42 @@ public class InterestService {
     @Transactional(readOnly = true)
     public PageResponse getInterests(UUID userId, InterestQueryParams params) {
 
-        Long total = 0L;
-        List<InterestDto> interestList = new ArrayList<>();
+        List<Interest> interestList = interestCustomRepository.findByInterestName(params);
 
-        if(params.keyword() == null || params.keyword().isEmpty()){
-            total = interestRepository.countTotal();
-            interestList = interestKeywordCustomRepository.findInterestBySearch(params);
-        }
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 사용자 입니다."));
 
-        total = interestKeywordRepository.countInterestsByKeyword(params.keyword());
-        interestList = interestKeywordCustomRepository.findInterestsByKeyword(params);
-
+        Long total = interestRepository.countTotal();
+        boolean hasNext = interestList.size() > params.limit();
         String nextCursor = null;
         String nextAfter = null;
-        boolean hasNext = interestList.size() > params.limit();
 
         if(hasNext) {
-            InterestDto lastItem = interestList.get(interestList.size() - 1);
-            nextCursor = lastItem.id().toString();
+            Interest lastItem = interestList.get(interestList.size() - 1);
+            nextCursor = lastItem.getId().toString();
+            nextAfter = lastItem.getCreatedAt().toString();
             interestList = interestList.subList(0, params.limit()); // 초과분 제거
         }
 
+        List<InterestDto> content = interestList.stream().map(interest -> {
+            List<String> keywords = getKeywordsName(interest.getId());
+            UserInterest userInterest = userInterestRepository.findByUserAndInterest(user,interest).orElse(null);
+            return InterestDto.builder()
+                    .id(interest.getId())
+                    .name(interest.getName())
+                    .keywords(keywords)
+                    .subscriberCount(interest.getSubscriberCount())
+                    .subscribedByMe(userInterest != null ? userInterest.getSubscribedByMe() : false)
+                    .build();
+        }).toList();
+
         return PageResponse.builder()
-                .content(interestList)
+                .content(content)
                 .nextCursor(nextCursor)
                 .size(interestList.size() - 1)
                 .totalElements(total)
                 .hasNext(hasNext)
+                .nextAfter(nextAfter)
                 .build();
     }
 
@@ -93,6 +106,44 @@ public class InterestService {
                 .subscriberCount(0)
                 .subscribedByMe(false)
                 .build();
+    }
+
+    public InterestSubscribeResponse subscribe(Long interestId, UUID userId) {
+        Interest interest = interestRepository.findById(interestId)
+                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 관심사 입니다."));
+
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 사용자 입니다."));
+
+        interestSubscribe(user, interest, true); // 구독하기
+        int interestSubscriberCount = userInterestRepository.countByInterestAndSubscribedByMeTrue(interest); // 구독자 수 카운트
+        interest.subscriberCount(interestSubscriberCount); // 구독자 증가
+        interestRepository.save(interest);
+
+        List<String> keywordsList = getKeywordsName(interest.getId());
+
+        return InterestSubscribeResponse.builder()
+                .id(user.getId())
+                .interestId(interest.getId())
+                .interestName(interest.getName())
+                .interestKeywords(keywordsList)
+                .interestSubscriberCount(interestSubscriberCount)
+                .createdAt(interest.getCreatedAt())
+                .build();
+    }
+
+    public void unsubscribe(Long interestId, UUID userId) {
+        Interest interest = interestRepository.findById(interestId)
+                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 관심사 입니다."));
+
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 사용자 입니다."));
+
+        interestSubscribe(user, interest, false); // 취소하기
+
+        int interestSubscriberCount = userInterestRepository.countByInterestAndSubscribedByMeTrue(interest); // 구독자 수 카운트
+        interest.subscriberCount(interestSubscriberCount); // 구독자 감소
+        interestRepository.save(interest);
     }
 
     private Interest saveInterest(String name) {
@@ -114,7 +165,7 @@ public class InterestService {
 
     private List<String> saveKeywords(Interest interest, Set<String> keywords) {
         // 이미 존재하는 키워드인지 조회
-        List<Keywords> existedKeywords = keywordRepository.findByKeywords(keywords);
+        List<Keywords> existedKeywords = keywordRepository.findByKeywordIn(keywords);
 
         // 존재하는 키워드의 문자열만 추출
         Set<String> existedKeywordStrings = existedKeywords.stream()
@@ -170,4 +221,20 @@ public class InterestService {
                 .toList();
     }
 
+    private List<String> getKeywordsName(Long interestId) {
+        List<Keywords> keywordsList = interestKeywordRepository.findByInterestId(interestId).stream()
+                .map(InterestKeyword::getKeywords)
+                .toList();
+
+        return keywordsList.stream().map(Keywords::getKeyword).toList();
+    }
+
+    private void interestSubscribe(User user, Interest interest, boolean subscribedByMe) {
+        UserInterest userInterest = userInterestRepository.findByUserAndInterest(user,interest)
+                .orElse(new UserInterest(user,interest, true));
+
+        userInterest.interestSubscribe(subscribedByMe); // 구독
+
+        userInterestRepository.save(userInterest);
+    }
 }

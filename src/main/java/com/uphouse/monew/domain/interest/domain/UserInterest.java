@@ -3,6 +3,7 @@ package com.uphouse.monew.domain.interest.domain;
 import com.uphouse.monew.domain.user.domain.User;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
+import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
@@ -25,4 +26,14 @@ public class UserInterest {
     private Interest interest;
 
     private Boolean subscribedByMe;
+
+    public UserInterest(User user, Interest interest, Boolean subscribedByMe) {
+        this.user = user;
+        this.interest = interest;
+        this.subscribedByMe = subscribedByMe;
+    }
+
+    public void interestSubscribe(boolean subscribedByMe) {
+        this.subscribedByMe = subscribedByMe;
+    }
 }

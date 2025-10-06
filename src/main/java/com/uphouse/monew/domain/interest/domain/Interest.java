@@ -31,4 +31,8 @@ public class Interest {
         this.subscriberCount = subscriberCount;
         this.createdAt = LocalDateTime.now();
     }
+
+    public void subscriberCount(int subscriberCount) {
+        this.subscriberCount = subscriberCount;
+    }
 }
