@@ -17,7 +17,10 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.*;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -26,9 +29,9 @@ import java.util.stream.Collectors;
 public class InterestService {
 
     private final InterestRepository interestRepository;
+    private final InterestCustomRepository interestCustomRepository;
     private final KeywordRepository keywordRepository;
     private final InterestKeywordRepository interestKeywordRepository;
-    private final InterestKeywordCustomRepository interestKeywordCustomRepository;
     private final UserRepository userRepository;
     private final UserInterestRepository userInterestRepository;
 
@@ -50,33 +53,42 @@ public class InterestService {
     @Transactional(readOnly = true)
     public PageResponse getInterests(UUID userId, InterestQueryParams params) {
 
-        Long total = 0L;
-        List<InterestDto> interestList = new ArrayList<>();
+        List<Interest> interestList = interestCustomRepository.findByInterestName(params);
 
-        if(params.keyword() == null || params.keyword().isEmpty()){
-            total = interestRepository.countTotal();
-            interestList = interestKeywordCustomRepository.findInterestBySearch(params);
-        }
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 사용자 입니다."));
 
-        total = interestKeywordRepository.countInterestsByKeyword(params.keyword());
-        interestList = interestKeywordCustomRepository.findInterestsByKeyword(params);
-
+        Long total = interestRepository.countTotal();
+        boolean hasNext = interestList.size() > params.limit();
         String nextCursor = null;
         String nextAfter = null;
-        boolean hasNext = interestList.size() > params.limit();
 
         if(hasNext) {
-            InterestDto lastItem = interestList.get(interestList.size() - 1);
-            nextCursor = lastItem.id().toString();
+            Interest lastItem = interestList.get(interestList.size() - 1);
+            nextCursor = lastItem.getId().toString();
+            nextAfter = lastItem.getCreatedAt().toString();
             interestList = interestList.subList(0, params.limit()); // 초과분 제거
         }
 
+        List<InterestDto> content = interestList.stream().map(interest -> {
+            List<String> keywords = getKeywordsName(interest.getId());
+            UserInterest userInterest = userInterestRepository.findByUserAndInterest(user,interest).orElse(null);
+            return InterestDto.builder()
+                    .id(interest.getId())
+                    .name(interest.getName())
+                    .keywords(keywords)
+                    .subscriberCount(interest.getSubscriberCount())
+                    .subscribedByMe(userInterest != null ? userInterest.getSubscribedByMe() : false)
+                    .build();
+        }).toList();
+
         return PageResponse.builder()
-                .content(interestList)
+                .content(content)
                 .nextCursor(nextCursor)
                 .size(interestList.size() - 1)
                 .totalElements(total)
                 .hasNext(hasNext)
+                .nextAfter(nextAfter)
                 .build();
     }
 
